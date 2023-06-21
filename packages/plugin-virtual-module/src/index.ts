@@ -1,4 +1,4 @@
-import path from 'path';
+import { dirname, join, extname } from 'path';
 import fs from 'fs-extra';
 import type { RspackPluginInstance, Compiler } from '@rspack/core';
 
@@ -9,12 +9,12 @@ export class RspackVirtualModulePlugin implements RspackPluginInstance {
 
   constructor(staticModules: Record<string, string>) {
     this.#staticModules = staticModules;
-    const nodeModulesDir = path.join(process.cwd(), 'node_modules');
+    const nodeModulesDir = join(process.cwd(), 'node_modules');
     if (!fs.existsSync(nodeModulesDir)) {
       fs.mkdirSync(nodeModulesDir);
     }
     this.#tempDir = fs.mkdtempSync(
-      path.join(nodeModulesDir, 'rspack-virtual-module-'),
+      join(nodeModulesDir, 'rspack-virtual-module-'),
     );
   }
 
@@ -42,6 +42,7 @@ export class RspackVirtualModulePlugin implements RspackPluginInstance {
 
   writeModule(path: string, content: string) {
     const normalizedPath = this.#normalizePath(path);
+    fs.ensureDirSync(dirname(normalizedPath));
     fs.writeFileSync(normalizedPath, content);
   }
 
@@ -50,7 +51,8 @@ export class RspackVirtualModulePlugin implements RspackPluginInstance {
   }
 
   #normalizePath(p: string) {
-    return path.join(this.#tempDir, p.endsWith('.js') ? p : `${p}.js`);
+    const ext = extname(p);
+    return join(this.#tempDir, ext ? p : `${p}.js`);
   }
 }
 
